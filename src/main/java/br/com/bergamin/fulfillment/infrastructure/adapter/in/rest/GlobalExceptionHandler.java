@@ -1,5 +1,6 @@
 package br.com.bergamin.fulfillment.infrastructure.adapter.in.rest;
 
+import br.com.bergamin.fulfillment.domain.exception.InvalidMessageStateException;
 import br.com.bergamin.fulfillment.domain.exception.ResourceNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
@@ -25,6 +26,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
     public ProblemDetail handleNotFound(ResourceNotFoundException e) {
         return problem(HttpStatus.NOT_FOUND, "Recurso nao encontrado", e.getMessage(), "recurso-nao-encontrado");
+    }
+
+    @ExceptionHandler(InvalidMessageStateException.class)
+    public ProblemDetail handleInvalidMessageState(InvalidMessageStateException e) {
+        ProblemDetail problem = problem(HttpStatus.CONFLICT, "Operacao nao permitida",
+                e.getMessage(), "estado-invalido");
+        problem.setProperty("currentStatus", e.getCurrentStatus().name());
+        return problem;
     }
 
     /** Enum ou UUID invalido na query string. */

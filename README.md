@@ -47,6 +47,24 @@ reiniciando, deadlock — essa sim é retentada, com espera crescente.
 O teste `mensagemEnvenenadaVaiParaDlq` verifica as duas coisas: a mensagem ruim chega na
 DLQ, e a mensagem seguinte é processada normalmente.
 
+**Mas mandar para a DLQ resolve só metade do problema.** Percebi isso depois: a mensagem
+desentope a partição e vai parar num tópico que ninguém abre. DLQ sem reprocessamento é só
+um lugar mais organizado para perder dado.
+
+Então um segundo consumidor lê a DLQ e grava cada mensagem morta numa tabela, com payload,
+erro original, tópico, partição e offset. A partir daí ela é consultável pela API, tem
+contador no Prometheus, e tem duas saídas: **reenviar** ao tópico principal ou **descartar
+com motivo registrado**.
+
+O reenvio usa o mesmo `eventId` — então se a falha tiver acontecido *depois* de o evento já
+ter sido aplicado, a guarda de idempotência reconhece a duplicata e nada acontece duas
+vezes. O reprocessamento se apoia na proteção que já existia.
+
+E tem uma regra que o domínio não deixa furar: mensagem **sem `eventId` não pode ser
+reenviada**, só descartada. Cabeçalho ausente é uma das causas de ela ter caído ali, e
+reenviar sem ele produziria exatamente o mesmo erro. Escrevi o teste antes de perceber que
+meu código validava isso tarde demais, depois de publicar — o teste pegou o bug.
+
 ### E quando o sistema externo cai?
 
 Retry e circuit breaker resolvem problemas diferentes, por isso os dois convivem no
@@ -112,12 +130,15 @@ flowchart LR
         CACHE[("Redis")]
         FILA["Fila de notificações"]
         CB["Circuit breaker"]
+        MORTAS["Mensagens mortas<br/>consultáveis"]
     end
 
     PARC["Parceiro de logística"]
 
     K --> C
     C -.mensagem inválida.-> DLQ
+    DLQ --> MORTAS
+    MORTAS -.reenvio manual.-> K
     C --> PROJ
     C -.invalida após commit.-> CACHE
     C --> FILA --> CB --> PARC
@@ -175,11 +196,11 @@ num ramo genérico e ninguém perceber.
 ## Testes
 
 ```bash
-./mvnw test      # 35 testes, ~15s, não precisa de Docker
-./mvnw verify    # + 15 de integração (PostgreSQL e Redis reais, Kafka embarcado)
+./mvnw test      # 48 testes, ~15s, não precisa de Docker
+./mvnw verify    # + 22 de integração (PostgreSQL e Redis reais, Kafka embarcado)
 ```
 
-52 no total. O que mais me deu trabalho para deixar honesto foi o do cache: depois da
+70 no total. O que mais me deu trabalho para deixar honesto foi o do cache: depois da
 primeira consulta, o teste **apaga a linha do PostgreSQL**. Se a resposta seguinte ainda
 vier, só pode ter vindo do Redis. É a diferença entre "configurei um cache" e "provei que
 ele está sendo usado".
@@ -200,9 +221,14 @@ pelos eventos; expor um POST criaria duas fontes de verdade.
 | `GET` | `/api/v1/orders/{orderId}` | Pedido na projeção (via cache quando disponível) |
 | `GET` | `/api/v1/orders?customerId=&status=` | Lista paginada |
 | `GET` | `/api/v1/notifications?orderId=&status=` | Histórico de entregas, tentativas e erros |
+| `GET` | `/api/v1/failed-messages?status=` | Mensagens que caíram na DLQ |
+| `GET` | `/api/v1/failed-messages/summary` | Quantas aguardam decisão |
+| `POST` | `/api/v1/failed-messages/{id}/reprocess` | Devolve ao tópico principal |
+| `POST` | `/api/v1/failed-messages/{id}/discard` | Descarta com motivo |
 
-Filtrar por `status=DEAD` responde a pergunta operacional que importa: o que deixou de ser
-entregue e precisa de alguém olhando.
+Filtrar notificações por `status=DEAD` e olhar o `summary` da DLQ respondem as duas
+perguntas operacionais que importam: o que deixou de ser entregue, e o que ainda precisa de
+alguém decidindo. Se o `summary` cresce, algo está falhando de forma sistemática.
 
 ---
 

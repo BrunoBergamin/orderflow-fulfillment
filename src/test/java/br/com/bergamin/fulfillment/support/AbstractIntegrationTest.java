@@ -55,7 +55,8 @@ public abstract class AbstractIntegrationTest {
     protected StringRedisTemplate redisTemplate;
 
     protected void limparTudo() {
-        jdbcTemplate.execute("TRUNCATE TABLE notification, order_snapshot, processed_event CASCADE");
+        jdbcTemplate.execute(
+                "TRUNCATE TABLE notification, order_snapshot, processed_event, failed_message CASCADE");
         redisTemplate.getConnectionFactory().getConnection().serverCommands().flushDb();
     }
 
