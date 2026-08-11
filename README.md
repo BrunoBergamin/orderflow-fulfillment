@@ -93,6 +93,9 @@ cd .. && git clone https://github.com/BrunoBergamin/orderflow-fulfillment.git
 cd orderflow-fulfillment && docker compose up --build
 ```
 
+Trocando `--build` por `--pull always`, os dois serviços sobem a partir das imagens
+publicadas no GHCR, sem compilar nada.
+
 Swagger em http://localhost:8081/swagger-ui.html, estado dos circuitos em
 `/actuator/circuitbreakers`.
 
