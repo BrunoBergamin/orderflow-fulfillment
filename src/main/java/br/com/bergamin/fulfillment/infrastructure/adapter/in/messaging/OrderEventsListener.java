@@ -5,6 +5,7 @@ import br.com.bergamin.fulfillment.domain.event.OrderEvent;
 import br.com.bergamin.fulfillment.domain.exception.UnparseableEventException;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import br.com.bergamin.fulfillment.infrastructure.observability.OriginTrace;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +32,7 @@ public class OrderEventsListener {
     private static final Logger log = LoggerFactory.getLogger(OrderEventsListener.class);
     private static final String HEADER_EVENT_ID = "eventId";
     private static final String HEADER_EVENT_TYPE = "eventType";
+    private static final String HEADER_TRACE_ID = "traceId";
 
     private final ProcessOrderEventUseCase processOrderEvent;
     private final OrderEventJsonParser parser;
@@ -51,18 +53,34 @@ public class OrderEventsListener {
         UUID eventId = requiredUuidHeader(record, HEADER_EVENT_ID);
         String eventType = requiredHeader(record, HEADER_EVENT_TYPE);
 
-        OrderEvent event = parser.parse(eventType, record.value());
-        ProcessOrderEventUseCase.Outcome outcome =
-                processOrderEvent.process(new ProcessOrderEventUseCase.Command(eventId, event));
+        // Publica o trace da requisicao original no MDC. A partir daqui todo log deste
+        // processamento carrega a referencia, e uma busca por aquele trace mostra a
+        // historia inteira -- do POST no servico de pedidos ate a entrega ao parceiro.
+        OriginTrace.set(optionalHeader(record, HEADER_TRACE_ID));
 
-        Counter.builder("fulfillment.events.consumed")
-                .tag("eventType", eventType)
-                .tag("outcome", outcome.name())
-                .description("Eventos de pedido consumidos")
-                .register(meterRegistry)
-                .increment();
+        try {
+            OrderEvent event = parser.parse(eventType, record.value());
+            ProcessOrderEventUseCase.Outcome outcome =
+                    processOrderEvent.process(new ProcessOrderEventUseCase.Command(eventId, event));
 
-        log.debug("evento {} (id {}) resultou em {}", eventType, eventId, outcome);
+            Counter.builder("fulfillment.events.consumed")
+                    .tag("eventType", eventType)
+                    .tag("outcome", outcome.name())
+                    .description("Eventos de pedido consumidos")
+                    .register(meterRegistry)
+                    .increment();
+
+            log.debug("evento {} (id {}) resultou em {}", eventType, eventId, outcome);
+        } finally {
+            // Sem a limpeza, a thread do consumidor levaria o trace de uma mensagem para a
+            // proxima e os logs apontariam para o pedido errado.
+            OriginTrace.clear();
+        }
+    }
+
+    private String optionalHeader(ConsumerRecord<String, String> record, String name) {
+        var header = record.headers().lastHeader(name);
+        return header == null ? null : new String(header.value(), StandardCharsets.UTF_8);
     }
 
     private String requiredHeader(ConsumerRecord<String, String> record, String name) {

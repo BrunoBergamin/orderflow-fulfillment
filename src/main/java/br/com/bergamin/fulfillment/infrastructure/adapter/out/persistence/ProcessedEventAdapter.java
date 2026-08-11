@@ -3,6 +3,7 @@ package br.com.bergamin.fulfillment.infrastructure.adapter.out.persistence;
 import br.com.bergamin.fulfillment.application.port.out.ProcessedEventPort;
 import br.com.bergamin.fulfillment.infrastructure.adapter.out.persistence.entity.ProcessedEventJpaEntity;
 import br.com.bergamin.fulfillment.infrastructure.adapter.out.persistence.repository.ProcessedEventJpaRepository;
+import br.com.bergamin.fulfillment.infrastructure.observability.OriginTrace;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,7 +39,19 @@ public class ProcessedEventAdapter implements ProcessedEventPort {
         if (repository.existsById(eventId)) {
             return false;
         }
-        repository.save(new ProcessedEventJpaEntity(eventId, eventType, processedAt));
+        repository.save(new ProcessedEventJpaEntity(eventId, eventType, processedAt, originTraceId()));
         return true;
+    }
+
+    /**
+     * Trace da requisicao original, colocado no MDC pelo listener.
+     *
+     * <p>Vem do MDC em vez de subir pela assinatura da porta de proposito: correlacao e
+     * observabilidade, nao regra de negocio. Fazendo o caso de uso carregar um
+     * {@code traceId} de parametro em parametro, o dominio passaria a saber o que e um
+     * trace -- e ele nao precisa saber.</p>
+     */
+    private String originTraceId() {
+        return OriginTrace.current();
     }
 }

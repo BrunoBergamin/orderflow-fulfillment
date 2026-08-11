@@ -171,13 +171,61 @@ class OrderEventsConsumerIT extends AbstractIntegrationTest {
         assertThat(statusDoPedido(pedidoQuebrado)).isNull();
     }
 
+    @Test
+    @DisplayName("guarda o trace da requisicao que originou o evento no outro servico")
+    void guardaTraceDeOrigem() {
+        UUID pedido = UUID.randomUUID();
+        String traceDaRequisicao = "4bf92f3577b34da6a3ce929d0e0e4736";
+
+        publicar(UUID.randomUUID(), "Order.Placed", pedido, """
+                {"orderId": "%s", "customerId": "%s", "total": {"amount": 75.00},
+                 "items": [{"productId": "%s", "sku": "X", "quantity": 1}],
+                 "occurredAt": "2026-08-11T12:00:00Z"}
+                """.formatted(pedido, UUID.randomUUID(), UUID.randomUUID()), traceDaRequisicao);
+
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(() ->
+                assertThat(contarEventosProcessados()).isEqualTo(1));
+
+        // E o que permite, partindo de um chamado do cliente, achar tudo que aconteceu nos
+        // dois servicos por causa daquela unica requisicao.
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT trace_id FROM processed_event", String.class))
+                .isEqualTo(traceDaRequisicao);
+    }
+
+    @Test
+    @DisplayName("mensagem sem trace continua sendo processada normalmente")
+    void toleraMensagemSemTrace() {
+        UUID pedido = UUID.randomUUID();
+
+        publicar(UUID.randomUUID(), "Order.Placed", pedido, """
+                {"orderId": "%s", "customerId": "%s", "total": {"amount": 10.00},
+                 "items": [{"productId": "%s", "sku": "X", "quantity": 1}],
+                 "occurredAt": "2026-08-11T12:00:00Z"}
+                """.formatted(pedido, UUID.randomUUID(), UUID.randomUUID()));
+
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(() ->
+                assertThat(statusDoPedido(pedido)).isEqualTo("PENDING"));
+
+        // Observabilidade nao pode ser requisito para o negocio funcionar.
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT trace_id FROM processed_event", String.class)).isNull();
+    }
+
     // ---------------------------------------------------------------- auxiliares
 
     private void publicar(UUID eventId, String eventType, UUID orderId, String payload) {
+        publicar(eventId, eventType, orderId, payload, null);
+    }
+
+    private void publicar(UUID eventId, String eventType, UUID orderId, String payload, String traceId) {
         ProducerRecord<String, String> record =
                 new ProducerRecord<>(TOPICO, orderId.toString(), payload);
         record.headers().add("eventId", eventId.toString().getBytes(StandardCharsets.UTF_8));
         record.headers().add("eventType", eventType.getBytes(StandardCharsets.UTF_8));
+        if (traceId != null) {
+            record.headers().add("traceId", traceId.getBytes(StandardCharsets.UTF_8));
+        }
         try {
             kafkaTemplate.send(record).get(20, TimeUnit.SECONDS);
         } catch (Exception e) {

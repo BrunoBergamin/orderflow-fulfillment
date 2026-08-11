@@ -71,6 +71,9 @@ management:
   metrics:
     tags:
       application: orderflow-fulfillment
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLE_RATE:1.0}
 
 springdoc:
   swagger-ui:
@@ -125,5 +128,9 @@ fulfillment:
     latency-millis: ${PARTNER_LATENCY_MILLIS:0}
 
 logging:
+  # Acrescenta o trace de origem ao padrao do Spring Boot, que ja traz o traceId proprio
+  # deste servico. Com os dois na mesma linha, da para partir de qualquer um dos lados.
+  pattern:
+    level: "%5p [origem=%X{originTraceId:-}]"
   level:
     br.com.bergamin.fulfillment: INFO

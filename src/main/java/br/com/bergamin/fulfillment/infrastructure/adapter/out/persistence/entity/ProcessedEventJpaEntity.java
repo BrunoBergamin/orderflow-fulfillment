@@ -28,14 +28,19 @@ public class ProcessedEventJpaEntity {
     @Column(name = "processed_at", nullable = false)
     private Instant processedAt;
 
+    /** Trace da requisicao que originou o evento no servico de pedidos. */
+    @Column(name = "trace_id", length = 64)
+    private String traceId;
+
     protected ProcessedEventJpaEntity() {
         // exigido pelo JPA
     }
 
-    public ProcessedEventJpaEntity(UUID eventId, String eventType, Instant processedAt) {
+    public ProcessedEventJpaEntity(UUID eventId, String eventType, Instant processedAt, String traceId) {
         this.eventId = eventId;
         this.eventType = eventType;
         this.processedAt = processedAt;
+        this.traceId = traceId;
     }
 
     public UUID getEventId() {
@@ -48,5 +53,9 @@ public class ProcessedEventJpaEntity {
 
     public Instant getProcessedAt() {
         return processedAt;
+    }
+
+    public String getTraceId() {
+        return traceId;
     }
 }

@@ -132,6 +132,15 @@ economia, mas transformaria qualquer mudança num release coordenado dos dois.
 
 ## Outras decisões
 
+**Cada mensagem carrega o trace da requisição que a originou.** O serviço de pedidos guarda
+o `trace_id` na linha da outbox e o reenvia no cabeçalho; aqui ele entra no MDC e é gravado
+em `processed_event`. Isso responde a pergunta que aparece quando o cliente reclama: partindo
+de uma requisição, achar tudo que aconteceu nos dois serviços por causa dela.
+
+Não tento continuar o span do produtor. Para isso seria preciso propagar o contexto W3C
+completo pela outbox, e o span pai terminou muito antes de a mensagem sair — guardar a
+referência resolve o problema real sem fingir uma causalidade que o relógio não sustenta.
+
 **A projeção é local, não uma consulta ao outro serviço.** Perguntar ao produtor a cada
 leitura recria o acoplamento em tempo de execução: se ele cai, este cai junto. O preço é
 consistência eventual — há uma janela de segundos em que a projeção está atrás da origem.
@@ -170,7 +179,7 @@ num ramo genérico e ninguém perceber.
 ./mvnw verify    # + 15 de integração (PostgreSQL e Redis reais, Kafka embarcado)
 ```
 
-50 no total. O que mais me deu trabalho para deixar honesto foi o do cache: depois da
+52 no total. O que mais me deu trabalho para deixar honesto foi o do cache: depois da
 primeira consulta, o teste **apaga a linha do PostgreSQL**. Se a resposta seguinte ainda
 vier, só pode ter vindo do Redis. É a diferença entre "configurei um cache" e "provei que
 ele está sendo usado".
