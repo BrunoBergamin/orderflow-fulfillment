@@ -40,7 +40,7 @@ JSON quebrado, tipo de evento desconhecido, cabeçalho faltando.
 
 O comportamento padrão do Spring Kafka é não confirmar o offset e reprocessar. Para sempre.
 Uma única mensagem defeituosa trava a partição inteira, e **nenhuma mensagem posterior é
-entregue**. O sistema parece vivo e simplesmente parou de reagir.
+entregue**. O sistema parece vivo, mas parou de reagir.
 
 `UnparseableEventException` está registrada como não retentável: vai direto para a DLQ
 (`orderflow.order-events.DLT`) e a fila continua andando.
