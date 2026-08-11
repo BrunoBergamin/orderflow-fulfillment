@@ -18,7 +18,7 @@ import java.util.List;
  * <p>Como no servico de pedidos, a chamada externa acontece <b>fora</b> de transacao: cada
  * entrega e uma ida a rede, e segurar uma conexao do pool durante um lote inteiro esgotaria
  * o pool no primeiro dia em que o parceiro ficar lento. O resultado de cada uma e gravado
- * por {@link NotificationOutcomeWriter} em transacoes curtas e independentes -- uma entrega
+ * por {@link NotificationOutcomeWriter} em transacoes curtas e independentes. Uma entrega
  * que falha nao desfaz as que deram certo no mesmo lote.</p>
  */
 @Service

@@ -15,7 +15,7 @@ import java.util.UUID;
  *
  * <p>A leitura e feita campo a campo, e nao por desserializacao automatica em uma classe
  * espelho. E deliberado: o contrato entre servicos e o JSON, e ler so os campos usados
- * deixa o consumidor tolerante a campos novos do produtor -- ele nao quebra quando o outro
+ * deixa o consumidor tolerante a campos novos do produtor. Ele nao quebra quando o outro
  * time adiciona algo. O que <b>tem</b> que existir e verificado aqui, com erro explicito.</p>
  */
 @Component

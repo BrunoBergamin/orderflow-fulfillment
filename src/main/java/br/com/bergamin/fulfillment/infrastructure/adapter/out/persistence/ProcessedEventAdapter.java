@@ -49,7 +49,7 @@ public class ProcessedEventAdapter implements ProcessedEventPort {
      * <p>Vem do MDC em vez de subir pela assinatura da porta de proposito: correlacao e
      * observabilidade, nao regra de negocio. Fazendo o caso de uso carregar um
      * {@code traceId} de parametro em parametro, o dominio passaria a saber o que e um
-     * trace -- e ele nao precisa saber.</p>
+     * trace, e ele nao precisa saber.</p>
      */
     private String originTraceId() {
         return OriginTrace.current();

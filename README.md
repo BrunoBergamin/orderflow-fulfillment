@@ -20,13 +20,14 @@ lado da fila.
 
 ### E quando a mesma mensagem chega duas vezes?
 
-Chega. Rebalanceamento de consumidores, timeout no commit de offset, reentrega do produtor —
-o Kafka entrega *pelo menos uma vez*, não *exatamente uma vez*. Sem tratamento, o parceiro
-recebe duas notificações do mesmo pedido.
+Chega. Rebalanceamento de consumidores, timeout no commit de offset, reentrega do produtor.
+O Kafka entrega *pelo menos uma vez*, não *exatamente uma vez*.
+
+Sem tratamento, o parceiro recebe duas notificações do mesmo pedido.
 
 Cada evento traz um `eventId` no cabeçalho, e ele vira chave primária da tabela
 `processed_event`. Marcar o evento como processado, atualizar a projeção e agendar a
-notificação acontecem **na mesma transação** — ou tudo, ou nada.
+notificação acontecem **na mesma transação**: ou tudo, ou nada.
 
 Isso responde a pergunta que eu achava óbvia no começo: por que não guardar isso no Redis, se
 é só uma chave? Porque o Redis não participa da transação e pode perder chaves (despejo por
@@ -35,14 +36,17 @@ no cliente. Cache serve para acelerar leitura, não para garantir correção.
 
 ### E quando a mensagem é impossível de processar?
 
-JSON quebrado, tipo de evento desconhecido, cabeçalho faltando. O comportamento padrão do
-Spring Kafka é não confirmar o offset e reprocessar — para sempre. Uma única mensagem
-defeituosa trava a partição inteira, e **nenhuma mensagem posterior é entregue**. O sistema
-parece vivo e simplesmente parou de reagir.
+JSON quebrado, tipo de evento desconhecido, cabeçalho faltando.
+
+O comportamento padrão do Spring Kafka é não confirmar o offset e reprocessar. Para sempre.
+Uma única mensagem defeituosa trava a partição inteira, e **nenhuma mensagem posterior é
+entregue**. O sistema parece vivo e simplesmente parou de reagir.
 
 `UnparseableEventException` está registrada como não retentável: vai direto para a DLQ
-(`orderflow.order-events.DLT`) e a fila continua andando. Falha transitória — banco
-reiniciando, deadlock — essa sim é retentada, com espera crescente.
+(`orderflow.order-events.DLT`) e a fila continua andando.
+
+Falha transitória é outra coisa. Banco reiniciando ou deadlock são retentados, com espera
+crescente.
 
 O teste `mensagemEnvenenadaVaiParaDlq` verifica as duas coisas: a mensagem ruim chega na
 DLQ, e a mensagem seguinte é processada normalmente.
@@ -56,25 +60,29 @@ erro original, tópico, partição e offset. A partir daí ela é consultável p
 contador no Prometheus, e tem duas saídas: **reenviar** ao tópico principal ou **descartar
 com motivo registrado**.
 
-O reenvio usa o mesmo `eventId` — então se a falha tiver acontecido *depois* de o evento já
+O reenvio usa o mesmo `eventId`, então se a falha tiver acontecido *depois* de o evento já
 ter sido aplicado, a guarda de idempotência reconhece a duplicata e nada acontece duas
 vezes. O reprocessamento se apoia na proteção que já existia.
 
 E tem uma regra que o domínio não deixa furar: mensagem **sem `eventId` não pode ser
 reenviada**, só descartada. Cabeçalho ausente é uma das causas de ela ter caído ali, e
-reenviar sem ele produziria exatamente o mesmo erro. Escrevi o teste antes de perceber que
-meu código validava isso tarde demais, depois de publicar — o teste pegou o bug.
+reenviar sem ele produziria exatamente o mesmo erro.
+
+Escrevi o teste antes de perceber que meu código validava isso tarde demais, depois de
+publicar. O teste pegou o bug.
 
 ### E quando o sistema externo cai?
 
 Retry e circuit breaker resolvem problemas diferentes, por isso os dois convivem no
 `PartnerNotificationAdapter`.
 
-O retry cobre o soluço: um timeout isolado, um pacote perdido — tentar de novo em 200ms
-resolve. O circuit breaker cobre a queda: quando o parceiro está mesmo fora, insistir é pior
-que desistir, porque cada tentativa consome thread deste lado e aumenta a fila do outro.
-Passado o limiar de erros o circuito abre, as chamadas falham na hora sem tocar a rede, e
-depois da janela de espera ele testa sozinho se o outro lado voltou.
+O retry cobre o soluço: um timeout isolado, um pacote perdido. Tentar de novo em 200ms
+resolve.
+
+O circuit breaker cobre a queda. Quando o parceiro está mesmo fora, insistir é pior que
+desistir, porque cada tentativa consome thread deste lado e aumenta a fila do outro. Passado
+o limiar de erros o circuito abre, as chamadas falham na hora sem tocar a rede, e depois da
+janela de espera ele testa sozinho se o outro lado voltou.
 
 Nada se perde nesse meio-tempo: as notificações recusadas voltam para a tabela com o
 intervalo exponencial calculado pelo domínio, e saem quando o parceiro voltar.
@@ -83,7 +91,7 @@ intervalo exponencial calculado pelo domínio, e saem quando o parceiro voltar.
 
 ## Rodando
 
-Precisa do serviço de pedidos no ar primeiro — é ele que cria a rede e o Kafka.
+Precisa do serviço de pedidos no ar primeiro: é ele que cria a rede e o Kafka.
 
 ```bash
 git clone https://github.com/BrunoBergamin/orderflow.git
@@ -148,7 +156,7 @@ flowchart LR
 ```
 
 Os dois serviços não compartilham banco nem biblioteca de modelo. O único acoplamento é o
-contrato do JSON no tópico, e o parser lê **só os campos que usa** — o produtor pode
+contrato do JSON no tópico, e o parser lê **só os campos que usa**. O produtor pode
 adicionar campos novos sem quebrar nada aqui. Um "commons" com o modelo de eventos pareceria
 economia, mas transformaria qualquer mudança num release coordenado dos dois.
 
@@ -162,12 +170,12 @@ em `processed_event`. Isso responde a pergunta que aparece quando o cliente recl
 de uma requisição, achar tudo que aconteceu nos dois serviços por causa dela.
 
 Não tento continuar o span do produtor. Para isso seria preciso propagar o contexto W3C
-completo pela outbox, e o span pai terminou muito antes de a mensagem sair — guardar a
+completo pela outbox, e o span pai terminou muito antes de a mensagem sair. Guardar a
 referência resolve o problema real sem fingir uma causalidade que o relógio não sustenta.
 
 **A projeção é local, não uma consulta ao outro serviço.** Perguntar ao produtor a cada
 leitura recria o acoplamento em tempo de execução: se ele cai, este cai junto. O preço é
-consistência eventual — há uma janela de segundos em que a projeção está atrás da origem.
+consistência eventual: há uma janela de segundos em que a projeção está atrás da origem.
 Para acompanhamento de pedido isso é aceitável; para autorizar pagamento não seria.
 
 **O cache é invalidado depois do commit, nunca durante.** Invalidando no meio da transação
@@ -179,19 +187,19 @@ registra a limpeza numa `TransactionSynchronization`.
 banco. Um cache que consegue causar erro 500 é ponto único de falha novo, não otimização.
 
 **Lease na fila de notificações.** O `SKIP LOCKED` impede duas instâncias de pegarem a mesma
-linha, mas o lock morre no fim da transação — que termina antes de a entrega começar, já que
+linha, mas o lock morre no fim da transação, que termina antes de a entrega começar, já que
 a chamada externa é feita fora de transação. Por isso a reserva também empurra o
 `next_attempt_at` para frente: a linha fica invisível durante a entrega. Se o processo morrer
 no meio, o lease expira e ela volta a ser tentada.
 
-**Chave de API em vez de JWT.** Quem consome este serviço são outros sistemas, não pessoas —
+**Chave de API em vez de JWT.** Quem consome este serviço são outros sistemas, não pessoas.
 não há usuário final para autorizar. A comparação usa `MessageDigest.isEqual`, que percorre
 todos os bytes; um `equals` comum retorna mais rápido quanto mais cedo diverge, e essa
 diferença de tempo permite descobrir a chave caractere a caractere.
 
 **O `switch` sobre os eventos não tem `default`.** `OrderEvent` é uma `sealed interface`, e
 o compilador exige que todos os casos sejam tratados. Se um evento novo entrar no contrato,
-o build aponta cada ponto que precisa decidir o que fazer com ele — em vez de o evento cair
+o build aponta cada ponto que precisa decidir o que fazer com ele, em vez de o evento cair
 num ramo genérico e ninguém perceber.
 
 ---
@@ -216,7 +224,7 @@ cache vira reescrita de regra de negócio.
 
 ## Endpoints
 
-Todos exigem `X-API-Key`. Somente leitura — estado de pedido muda na origem e chega aqui
+Todos exigem `X-API-Key`. Somente leitura: estado de pedido muda na origem e chega aqui
 pelos eventos; expor um POST criaria duas fontes de verdade.
 
 | Método | Rota | Descrição |
@@ -243,12 +251,12 @@ Awaitility e ArchUnit. Docker multi-stage em camadas e GitHub Actions.
 
 ## Os outros dois serviços
 
-- [orderflow](https://github.com/BrunoBergamin/orderflow) — API de pedidos: idempotência,
+- [orderflow](https://github.com/BrunoBergamin/orderflow), API de pedidos: idempotência,
   lock otimista no estoque e Transactional Outbox
-- [orderflow-reconciliation](https://github.com/BrunoBergamin/orderflow-reconciliation) —
+- [orderflow-reconciliation](https://github.com/BrunoBergamin/orderflow-reconciliation),
   conciliação financeira em lote com Spring Batch
 
 ---
 
-**Bruno Alves Bergamin** — back-end Java ·
+**Bruno Alves Bergamin**, back-end Java ·
 [LinkedIn](https://www.linkedin.com/in/bruno-alves-bergamin-6b711a347) · Licença MIT

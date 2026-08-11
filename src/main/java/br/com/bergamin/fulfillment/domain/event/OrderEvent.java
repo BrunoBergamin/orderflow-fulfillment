@@ -8,7 +8,7 @@ import java.util.UUID;
  * Os fatos que este servico sabe reagir, publicados pelo servico de pedidos.
  *
  * <p>Interface {@code sealed}: a lista de eventos e fechada e conhecida em tempo de
- * compilacao. Quem trata esses eventos usa {@code switch} sem {@code default} -- se um
+ * compilacao. Quem trata esses eventos usa {@code switch} sem {@code default}. Se um
  * evento novo entrar aqui, o compilador aponta todos os pontos que precisam decidir o que
  * fazer com ele, em vez de o evento cair silenciosamente num ramo generico.</p>
  *
@@ -24,7 +24,7 @@ public sealed interface OrderEvent {
 
     UUID orderId();
 
-    /** Momento em que o fato ocorreu na origem -- usado para descartar evento atrasado. */
+    /** Momento em que o fato ocorreu na origem. Usado para descartar evento atrasado. */
     Instant occurredAt();
 
     /** Nome do evento no contrato, ex.: {@code Order.Placed}. */

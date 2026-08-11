@@ -17,7 +17,7 @@ import org.springframework.util.backoff.ExponentialBackOff;
  *
  * <p>Sem isto, o comportamento padrao de uma excecao no listener e nao confirmar o offset e
  * reprocessar a mesma mensagem para sempre. Uma unica mensagem defeituosa trava a particao
- * inteira e nenhuma mensagem posterior e entregue -- falha silenciosa que so aparece quando
+ * inteira e nenhuma mensagem posterior e entregue. Falha silenciosa que so aparece quando
  * alguem nota que o sistema parou de reagir.</p>
  *
  * <p>A separacao e simples: falha <i>transitoria</i> (banco reiniciando, deadlock) merece

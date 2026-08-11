@@ -11,7 +11,7 @@ import java.util.UUID;
 /**
  * Tabela {@code processed_event}: os eventos que este servico ja aplicou.
  *
- * <p>O id do evento e a propria chave primaria -- a unicidade nao depende de nenhum codigo
+ * <p>O id do evento e a propria chave primaria. A unicidade nao depende de nenhum codigo
  * estar correto, e uma garantia do banco.</p>
  */
 @Entity

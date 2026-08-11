@@ -19,7 +19,7 @@ import java.util.UUID;
  * Adaptador de entrada por mensageria.
  *
  * <p>Faz o minimo: le os cabecalhos, delega a traducao ao parser e chama o caso de uso.
- * Nenhuma regra mora aqui -- o mesmo caso de uso poderia ser acionado por um endpoint de
+ * Nenhuma regra mora aqui. O mesmo caso de uso poderia ser acionado por um endpoint de
  * reprocessamento sem nada mudar.</p>
  *
  * <p>Excecao lancada daqui nao e engolida: e ela que informa ao Spring Kafka se a mensagem
@@ -55,7 +55,7 @@ public class OrderEventsListener {
 
         // Publica o trace da requisicao original no MDC. A partir daqui todo log deste
         // processamento carrega a referencia, e uma busca por aquele trace mostra a
-        // historia inteira -- do POST no servico de pedidos ate a entrega ao parceiro.
+        // historia inteira. Do POST no servico de pedidos ate a entrega ao parceiro.
         OriginTrace.set(optionalHeader(record, HEADER_TRACE_ID));
 
         try {

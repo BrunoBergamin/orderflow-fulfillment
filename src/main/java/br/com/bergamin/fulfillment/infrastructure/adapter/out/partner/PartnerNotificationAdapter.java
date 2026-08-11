@@ -9,13 +9,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
- * Unica porta de saida deste servico para o mundo externo -- e por isso o unico lugar com
+ * Unica porta de saida deste servico para o mundo externo, e por isso o unico lugar com
  * circuit breaker.
  *
  * <p><b>Retentativa e disjuntor resolvem problemas diferentes e por isso convivem.</b> O
  * {@code @Retry} cobre a falha passageira: um timeout isolado, um pacote perdido. O
  * {@code @CircuitBreaker} cobre a falha sistemica: quando o parceiro esta realmente fora do
- * ar, insistir e pior do que desistir -- cada tentativa consome thread deste lado e aumenta
+ * ar, insistir e pior do que desistir. Cada tentativa consome thread deste lado e aumenta
  * a fila do outro. Passado o limiar de erros, o circuito abre e as chamadas passam a falhar
  * de imediato, sem tocar na rede. Depois da janela de espera ele deixa passar algumas
  * chamadas de teste e, se derem certo, volta ao normal sozinho.</p>

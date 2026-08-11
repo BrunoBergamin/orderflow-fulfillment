@@ -15,7 +15,7 @@ public class ApplicationConfig {
      *
      * <p>Indispensavel aqui: a politica de retentativa e baseada em tempo. Com o
      * {@code Clock} injetado, o teste avanca o relogio e verifica o intervalo exato entre
-     * tentativas -- sem ele, so restaria colocar o teste para dormir.</p>
+     * tentativas. Sem ele, so restaria colocar o teste para dormir.</p>
      */
     @Bean
     public Clock clock() {

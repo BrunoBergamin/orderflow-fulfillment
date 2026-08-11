@@ -32,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * O ciclo completo da fila de mensagens mortas: cair, aparecer e ter um caminho de volta.
  *
  * <p>Quase todo projeto configura DLQ; poucos dao a ela um caminho de volta. Estes testes
- * cobrem justamente essa parte -- a mensagem que falhou vira uma linha consultavel, e o
+ * cobrem justamente essa parte. A mensagem que falhou vira uma linha consultavel, e o
  * reenvio realmente reprocessa o evento.</p>
  */
 @EmbeddedKafka(partitions = 1, topics = {DeadLetterQueueIT.TOPICO, DeadLetterQueueIT.DLT})

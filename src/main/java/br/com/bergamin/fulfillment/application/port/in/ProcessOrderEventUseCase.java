@@ -11,7 +11,7 @@ public interface ProcessOrderEventUseCase {
 
     /**
      * @param eventId identificador da ocorrencia, vindo do cabecalho {@code eventId} da
-     *                mensagem. E a chave da idempotencia -- nao pode ser o id do pedido,
+     *                mensagem. E a chave da idempotencia. Nao pode ser o id do pedido,
      *                que se repete a cada evento do mesmo pedido.
      */
     record Command(UUID eventId, OrderEvent event) {

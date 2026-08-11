@@ -10,7 +10,7 @@ import java.util.UUID;
  * Uma mensagem que a aplicacao nao conseguiu processar e foi para a DLQ.
  *
  * <p>Mandar para a fila de mensagens mortas resolve metade do problema: desentope a
- * particao. A outra metade e o que este agregado cobre -- a mensagem fica visivel,
+ * particao. A outra metade e o que este agregado cobre. A mensagem fica visivel,
  * consultavel e com um caminho de volta. DLQ sem reprocessamento e so um lugar mais
  * organizado para perder dado.</p>
  */
@@ -89,7 +89,7 @@ public class FailedMessage {
      * Recusa a operacao antes que ela comece.
      *
      * <p>Existe separado de {@link #markReprocessed} porque a validacao precisa acontecer
-     * <b>antes</b> de a mensagem sair para o broker -- validar so na marcacao deixaria uma
+     * <b>antes</b> de a mensagem sair para o broker. Validar so na marcacao deixaria uma
      * mensagem sem identificacao ser publicada e falhar de novo do outro lado.</p>
      */
     public void ensureReprocessable() {

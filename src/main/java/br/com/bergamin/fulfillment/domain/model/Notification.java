@@ -13,7 +13,7 @@ import java.util.UUID;
  * de negocio, testaveis sem subir Spring nem esperar em relogio de verdade.</p>
  *
  * <p>O intervalo cresce exponencialmente ({@code base * 2^tentativas}, com teto). Retentar
- * de imediato contra um parceiro que ja esta sobrecarregado so aumenta a fila dele -- o
+ * de imediato contra um parceiro que ja esta sobrecarregado so aumenta a fila dele. O
  * backoff da tempo de o outro lado se recuperar.</p>
  */
 public class Notification {
@@ -69,7 +69,7 @@ public class Notification {
     }
 
     /**
-     * Registra a falha e agenda a proxima tentativa -- ou desiste, se esgotou o limite.
+     * Registra a falha e agenda a proxima tentativa, ou desiste, se esgotou o limite.
      */
     public void registerFailure(String error, Instant now) {
         this.attempts++;

@@ -28,7 +28,7 @@ import java.util.UUID;
  * causar erro 500 e um ponto unico de falha novo, nao uma otimizacao.</p>
  *
  * <p>A serializacao usa um record proprio em vez do objeto de dominio. Assim o formato
- * guardado no Redis nao fica preso ao construtor da classe de dominio -- refatorar o
+ * guardado no Redis nao fica preso ao construtor da classe de dominio. Refatorar o
  * dominio nao invalida (nem corrompe) o que ja esta em cache.</p>
  */
 @Component

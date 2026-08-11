@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
  * Adaptador de entrada por tempo.
  *
  * <p>E so um gatilho: nao decide nada, apenas chama o caso de uso em intervalos. Isso deixa
- * o despacho testavel sem esperar o relogio -- os testes chamam o caso de uso direto.</p>
+ * o despacho testavel sem esperar o relogio. Os testes chamam o caso de uso direto.</p>
  */
 @Component
 @ConditionalOnProperty(name = "fulfillment.dispatch.enabled", havingValue = "true", matchIfMissing = true)

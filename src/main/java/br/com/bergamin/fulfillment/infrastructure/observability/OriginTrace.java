@@ -12,8 +12,8 @@ import org.slf4j.MDC;
  *
  * <p>Nao tentamos continuar o span do produtor. Para isso seria preciso propagar o contexto
  * W3C completo (traceparent com span pai) atraves da outbox, e o span pai ja terminou muito
- * antes de a mensagem sair. Guardar a referencia resolve o problema real -- achar tudo que
- * pertence a uma requisicao -- sem fingir uma relacao de causalidade que o relogio nao
+ * antes de a mensagem sair. Guardar a referencia resolve o problema real. Achar tudo que
+ * pertence a uma requisicao. Sem fingir uma relacao de causalidade que o relogio nao
  * sustenta.</p>
  */
 public final class OriginTrace {

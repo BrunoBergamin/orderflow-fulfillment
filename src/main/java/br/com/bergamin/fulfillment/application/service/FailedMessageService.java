@@ -50,7 +50,7 @@ public class FailedMessageService implements ManageFailedMessageUseCase {
      * Reenvia primeiro, marca depois.
      *
      * <p>A ordem e deliberada. Marcando antes, uma falha no broker deixaria a mensagem como
-     * "reprocessada" sem nunca ter saido -- e ela sumiria da lista de pendencias sem ter
+     * "reprocessada" sem nunca ter saido, e ela sumiria da lista de pendencias sem ter
      * sido resolvida. Do jeito atual, se o envio falhar a excecao sobe, a marcacao nao
      * acontece e a mensagem continua na fila esperando outra tentativa.</p>
      *

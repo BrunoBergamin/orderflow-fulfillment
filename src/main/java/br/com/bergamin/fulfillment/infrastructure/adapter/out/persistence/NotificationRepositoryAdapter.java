@@ -64,7 +64,7 @@ public class NotificationRepositoryAdapter implements NotificationRepositoryPort
      * <p>O lock do banco vale so ate o fim desta transacao, que termina antes de a entrega
      * comecar. Sem empurrar o {@code next_attempt_at}, outra instancia pegaria as mesmas
      * linhas segundos depois e o parceiro receberia a notificacao duplicada. Se o processo
-     * morrer no meio da entrega, o lease expira e a notificacao volta a ser tentada -- e a
+     * morrer no meio da entrega, o lease expira e a notificacao volta a ser tentada, e a
      * escolha consciente por "pelo menos uma vez".</p>
      */
     @Override

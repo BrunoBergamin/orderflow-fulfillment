@@ -26,7 +26,7 @@ public interface OrderSnapshotCachePort {
      *
      * <p>A ordem importa. Invalidando antes do commit, existe uma janela em que outra
      * requisicao le o banco (ainda com o valor antigo, pois a transacao nao commitou) e
-     * repovoa o cache -- que passa a servir dado velho ate o TTL expirar. Invalidar depois
+     * repovoa o cache, que passa a servir dado velho ate o TTL expirar. Invalidar depois
      * do commit fecha essa janela.</p>
      */
     void evictAfterCommit(UUID orderId);

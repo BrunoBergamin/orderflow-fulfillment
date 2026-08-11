@@ -22,7 +22,7 @@ import java.security.MessageDigest;
  * Autenticacao por chave de API.
  *
  * <p>Este servico e interno: quem o consome sao outros sistemas, nao pessoas. Chave de API
- * e o mecanismo adequado -- JWT com perfil de usuario aqui seria resolver um problema que
+ * e o mecanismo adequado. JWT com perfil de usuario aqui seria resolver um problema que
  * nao existe, ja que nao ha usuario final para autorizar.</p>
  *
  * <p>A comparacao usa {@link MessageDigest#isEqual}, que percorre os bytes por inteiro

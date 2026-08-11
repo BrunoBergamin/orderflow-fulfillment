@@ -36,7 +36,7 @@ public class OrderSnapshot {
      * Cria uma projecao vazia.
      *
      * <p>Nasce sem estado porque um {@code Order.Paid} pode chegar antes do
-     * {@code Order.Placed} correspondente -- por exemplo, se o {@code Placed} tiver ido
+     * {@code Order.Placed} correspondente, por exemplo, se o {@code Placed} tiver ido
      * para a DLQ e sido reprocessado depois. Melhor registrar o que se sabe do que
      * descartar o evento.</p>
      */
@@ -62,7 +62,7 @@ public class OrderSnapshot {
     /**
      * Indica que o evento e mais velho do que o ultimo ja aplicado.
      *
-     * <p>O Kafka garante ordem dentro da particao, e a chave e o id do pedido -- entao, no
+     * <p>O Kafka garante ordem dentro da particao, e a chave e o id do pedido. Entao, no
      * caminho feliz, os eventos de um pedido chegam em ordem. O caminho infeliz existe: uma
      * mensagem que falhou, foi para a DLQ e voltou a ser processada chega depois das que
      * vieram atras dela. Sem esta guarda, um {@code Placed} reprocessado sobrescreveria um

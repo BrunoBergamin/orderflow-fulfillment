@@ -18,7 +18,7 @@ import java.time.Clock;
 import java.time.Instant;
 
 /**
- * Reage a um evento de pedido -- uma vez, e só uma.
+ * Reage a um evento de pedido. Uma vez, e só uma.
  *
  * <p>Tudo acontece na mesma transacao: marcar o evento como processado, atualizar a projecao
  * e agendar a notificacao. Se qualquer passo falhar, o evento volta a constar como nao

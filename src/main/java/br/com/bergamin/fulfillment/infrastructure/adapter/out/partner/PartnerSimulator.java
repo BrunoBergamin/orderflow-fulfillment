@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Simula o parceiro externo de logistica.
  *
  * <p>Substitui o cliente HTTP real. A integracao verdadeira teria um {@code RestClient}
- * apontando para o ERP do parceiro -- o que muda e apenas esta classe; o contrato
+ * apontando para o ERP do parceiro. O que muda e apenas esta classe; o contrato
  * ({@code NotificationSenderPort}), o circuit breaker e a politica de retentativa
  * continuam iguais.</p>
  *

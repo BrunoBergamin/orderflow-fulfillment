@@ -15,7 +15,7 @@ import org.testcontainers.utility.DockerImageName;
  * Base dos testes de integracao: PostgreSQL e Redis reais.
  *
  * <p>Os containers sao iniciados uma unica vez para toda a suite. Cada classe de teste que
- * precisa de Kafka acrescenta {@code @EmbeddedKafka} -- broker em processo, sem um terceiro
+ * precisa de Kafka acrescenta {@code @EmbeddedKafka}. Broker em processo, sem um terceiro
  * container, o que mantem a suite leve o suficiente para rodar em maquina modesta e no
  * runner do CI.</p>
  */

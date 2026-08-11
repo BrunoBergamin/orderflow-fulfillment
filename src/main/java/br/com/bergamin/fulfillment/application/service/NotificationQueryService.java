@@ -8,7 +8,7 @@ import br.com.bergamin.fulfillment.domain.model.Notification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Consulta do historico de entregas -- inclusive as que morreram, para inspecao. */
+/** Consulta do historico de entregas, inclusive as que morreram, para inspecao. */
 @Service
 public class NotificationQueryService implements FindNotificationUseCase {
 

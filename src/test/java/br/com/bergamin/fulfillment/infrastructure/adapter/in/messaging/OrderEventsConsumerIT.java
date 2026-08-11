@@ -29,7 +29,7 @@ import static org.awaitility.Awaitility.await;
  * O caminho completo do consumo: mensagem no topico -> projecao gravada -> notificacao
  * agendada, com idempotencia e DLQ.
  *
- * <p>Os payloads sao os que o servico de pedidos publica de verdade -- se o contrato entre
+ * <p>Os payloads sao os que o servico de pedidos publica de verdade. Se o contrato entre
  * os dois quebrar, quebra aqui.</p>
  */
 @EmbeddedKafka(partitions = 1, topics = {OrderEventsConsumerIT.TOPICO, OrderEventsConsumerIT.DLT})
