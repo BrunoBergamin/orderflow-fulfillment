@@ -1,0 +1,74 @@
+# Sobe este servico com as dependencias proprias.
+#
+# Para ver o sistema completo funcionando (produtor + consumidor), suba antes o
+# docker-compose do repositorio `orderflow` e depois este: os dois usam a rede
+# `orderflow_default` e conversam pelo mesmo topico Kafka.
+#
+#   cd ../orderflow            && docker compose up -d
+#   cd ../orderflow-fulfillment && docker compose up --build
+name: orderflow-fulfillment
+
+services:
+  postgres-fulfillment:
+    image: postgres:16-alpine
+    container_name: fulfillment-postgres
+    environment:
+      POSTGRES_DB: fulfillment
+      POSTGRES_USER: fulfillment
+      POSTGRES_PASSWORD: fulfillment
+    # Porta diferente da do servico de pedidos: bancos separados, um por servico.
+    # Compartilhar banco entre microsservicos e o atalho que os transforma em um
+    # monolito distribuido -- o pior dos dois mundos.
+    ports:
+      - "5433:5432"
+    volumes:
+      - fulfillment-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fulfillment -d fulfillment"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: fulfillment-redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  fulfillment:
+    build: .
+    container_name: fulfillment-api
+    ports:
+      - "8081:8081"
+    environment:
+      DB_URL: jdbc:postgresql://postgres-fulfillment:5432/fulfillment
+      DB_USERNAME: fulfillment
+      DB_PASSWORD: fulfillment
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      API_KEY: chave-de-demonstracao
+    depends_on:
+      postgres-fulfillment:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - default
+      - orderflow
+    restart: unless-stopped
+
+volumes:
+  fulfillment-data:
+
+networks:
+  # Rede criada pelo docker-compose do servico de pedidos, onde vive o Kafka.
+  orderflow:
+    external: true
+    name: orderflow_default

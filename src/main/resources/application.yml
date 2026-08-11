@@ -1,0 +1,129 @@
+spring:
+  application:
+    name: orderflow-fulfillment
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/fulfillment}
+    username: ${DB_USERNAME:fulfillment}
+    password: ${DB_PASSWORD:fulfillment}
+    hikari:
+      maximum-pool-size: 10
+      connection-timeout: 5000
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2s
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: earliest
+      # O offset so avanca depois que o listener retorna sem erro. Com auto-commit, uma
+      # mensagem que falhou seria dada como consumida e o fato se perderia.
+      enable-auto-commit: false
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+    listener:
+      ack-mode: record
+      missing-topics-fatal: false
+
+server:
+  port: ${SERVER_PORT:8081}
+  error:
+    include-message: never
+    include-stacktrace: never
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,circuitbreakers
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  health:
+    circuitbreakers:
+      enabled: true
+  metrics:
+    tags:
+      application: orderflow-fulfillment
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      partner:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        # Nao abre o circuito por causa das duas primeiras chamadas: uma amostra minima
+        # evita desligar a integracao inteira por um erro isolado na subida da aplicacao.
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 2
+        automatic-transition-from-open-to-half-open-enabled: true
+        register-health-indicator: true
+        record-exceptions:
+          - br.com.bergamin.fulfillment.domain.exception.NotificationDeliveryException
+  retry:
+    instances:
+      partner:
+        max-attempts: 3
+        wait-duration: 200ms
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - br.com.bergamin.fulfillment.domain.exception.NotificationDeliveryException
+
+fulfillment:
+  security:
+    api-key: ${API_KEY:chave-local-de-desenvolvimento}
+  messaging:
+    topic: ${EVENTS_TOPIC:orderflow.order-events}
+    consumer-group: ${CONSUMER_GROUP:orderflow-fulfillment}
+    retry:
+      initial-interval-ms: 1000
+      # Janela total de retentativas antes de mandar para a DLQ.
+      max-elapsed-ms: 10000
+  dispatch:
+    enabled: ${DISPATCH_ENABLED:true}
+    poll-interval-ms: 5000
+    batch-size: 50
+    # Enquanto uma notificacao esta sendo entregue, ela fica invisivel para outras
+    # instancias por este tempo. Se o processo morrer no meio, ela volta a ser tentada.
+    visibility-timeout-seconds: 120
+  cache:
+    ttl-seconds: 300
+  partner:
+    available: ${PARTNER_AVAILABLE:true}
+    latency-millis: ${PARTNER_LATENCY_MILLIS:0}
+
+logging:
+  level:
+    br.com.bergamin.fulfillment: INFO

@@ -1,0 +1,54 @@
+# Perfil dos testes de integracao. Banco e Redis vem do Testcontainers.
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+fulfillment:
+  security:
+    api-key: chave-de-teste
+  # O agendador fica desligado: os testes chamam o caso de uso diretamente, o que torna o
+  # resultado deterministico em vez de depender de quando o proximo ciclo dispara.
+  dispatch:
+    enabled: false
+    batch-size: 50
+    visibility-timeout-seconds: 120
+  messaging:
+    topic: orderflow.order-events
+    consumer-group: orderflow-fulfillment-test
+    retry:
+      initial-interval-ms: 200
+      max-elapsed-ms: 1000
+  cache:
+    ttl-seconds: 300
+  partner:
+    available: true
+    latency-millis: 0
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      partner:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 5
+        minimum-number-of-calls: 3
+        failure-rate-threshold: 50
+        # Longo o bastante para o circuito continuar aberto durante a verificacao.
+        wait-duration-in-open-state: 60s
+        automatic-transition-from-open-to-half-open-enabled: false
+  retry:
+    instances:
+      partner:
+        max-attempts: 2
+        wait-duration: 10ms
+
+logging:
+  level:
+    org.testcontainers: WARN
+    com.github.dockerjava: WARN
+    kafka: WARN
+    org.apache.kafka: WARN
+    org.apache.zookeeper: WARN
+    state.change.logger: WARN
